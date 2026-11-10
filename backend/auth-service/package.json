@@ -1,0 +1,1 @@
+{"name":"auth-service","type":"module","scripts":{"dev":"node src/server.js","seed":"node src/seed.js"},"dependencies":{"@ibanking/shared":"*","bcryptjs":"^2.4.3"}}

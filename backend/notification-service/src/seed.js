@@ -1,0 +1,1 @@
+import mongoose from 'mongoose';import {connectDb} from '@ibanking/shared';import {Otp} from './models/Otp.js';await connectDb(process.env.NOTIFICATION_DB||'ibanking_notification');await Otp.deleteMany({});console.log('Cleared demo OTP challenges.');await mongoose.disconnect();

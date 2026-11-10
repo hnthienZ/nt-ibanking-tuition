@@ -1,0 +1,3 @@
+import mongoose from 'mongoose';
+export const Student=mongoose.model('Student',new mongoose.Schema({studentCode:{type:String,unique:true,required:true,index:true},fullName:{type:String,required:true},faculty:{type:String,required:true},major:{type:String,required:true}},{timestamps:true}));
+export const TuitionInvoice=mongoose.model('TuitionInvoice',new mongoose.Schema({studentId:{type:mongoose.Schema.Types.ObjectId,required:true,unique:true},studentCode:{type:String,unique:true,required:true,index:true},amount:{type:Number,required:true,min:1},term:{type:String,default:'HK1 2026/2027'},status:{type:String,enum:['UNPAID','PROCESSING','PAID'],default:'UNPAID',index:true},processingPaymentId:{type:String,default:null},paidAt:{type:Date,default:null}},{timestamps:true}));

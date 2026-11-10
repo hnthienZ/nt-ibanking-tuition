@@ -1,0 +1,13 @@
+﻿{
+    "name":  "notification-service",
+    "type":  "module",
+    "scripts":  {
+                    "dev":  "node src/server.js",
+                    "seed":  "node src/seed.js",
+                    "test":  "node --test --test-isolation=none test/*.test.js"
+                },
+    "dependencies":  {
+                         "@ibanking/shared":  "*",
+                         "nodemailer":  "^6.10.0"
+                     }
+}

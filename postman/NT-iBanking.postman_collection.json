@@ -1,0 +1,299 @@
+{
+  "info": {
+    "_postman_id": "ed90c3de-68f6-4a9e-930b-924d040aa227",
+    "name": "NT iBANKING — Gmail OTP Tuition Payment",
+    "description": "Public API through API Gateway. Login uses an HttpOnly cookie in Postman's cookie jar. OTP is sent only to the authenticated account email and must be read from Gmail; no API returns the OTP.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:4000/api"
+    },
+    {
+      "key": "username",
+      "value": "demo2"
+    },
+    {
+      "key": "password",
+      "value": "Midterm2026!"
+    },
+    {
+      "key": "email",
+      "value": ""
+    },
+    {
+      "key": "studentCode",
+      "value": "521H0004"
+    },
+    {
+      "key": "transactionId",
+      "value": ""
+    },
+    {
+      "key": "otp",
+      "value": ""
+    },
+    {
+      "key": "wrongOtp",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Sign in and find tuition",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login successful', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json().data;",
+                  "pm.expect(data.token).to.be.undefined;",
+                  "pm.expect(data.user.email).to.be.ok;",
+                  "pm.collectionVariables.set('email', data.user.email);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "Lookup tuition",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/tuition/{{studentCode}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Create payment and send OTP",
+      "item": [
+        {
+          "name": "Create payment (sends OTP to Gmail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('payment created and OTP email sent', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json().data;",
+                  "pm.expect(data.emailSent).to.eql(true);",
+                  "pm.expect(data.otp).to.be.undefined;",
+                  "pm.expect(data.demoOtp).to.be.undefined;",
+                  "pm.expect(pm.response.text()).not.to.include('otpHash');",
+                  "pm.collectionVariables.set('transactionId', data.payment.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentCode\": \"{{studentCode}}\",\n  \"termsAccepted\": true,\n  \"idempotencyKey\": \"{{$guid}}\"\n}"
+            },
+            "url": "{{baseUrl}}/payments"
+          }
+        },
+        {
+          "name": "Check resend cooldown (expect 429)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('resend is blocked during 60 second cooldown', () => pm.response.to.have.status(429));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transactionId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/otp/send"
+          }
+        },
+        {
+          "name": "Verify incorrect OTP (expected 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transactionId}}\",\n  \"email\": \"{{email}}\",\n  \"otp\": \"{{wrongOtp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/otp/verify"
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const actual = pm.collectionVariables.get('otp') || '';",
+                  "const wrong = actual === '000000' ? '000001' : '000000';",
+                  "pm.collectionVariables.set('wrongOtp', wrong);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('incorrect OTP is rejected', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify OTP from Gmail (set collection variable otp first)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OTP verified', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().data.verified).to.eql(true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transactionId}}\",\n  \"email\": \"{{email}}\",\n  \"otp\": \"{{otp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/otp/verify"
+          }
+        },
+        {
+          "name": "Verify reused OTP (expect 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('OTP cannot be reused', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transactionId}}\",\n  \"email\": \"{{email}}\",\n  \"otp\": \"{{otp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/otp/verify"
+          }
+        },
+        {
+          "name": "Confirm payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('payment succeeded', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().data.payment.status).to.eql('SUCCEEDED');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transactionId}}\",\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": "{{baseUrl}}/payments/confirm"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Inspect transaction",
+      "item": [
+        {
+          "name": "Payment detail",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/payments/{{transactionId}}"
+          }
+        },
+        {
+          "name": "Payment history",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/payments/history?page=1&limit=20"
+          }
+        }
+      ]
+    }
+  ]
+}

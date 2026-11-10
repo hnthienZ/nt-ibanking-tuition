@@ -1,0 +1,1 @@
+import axios from'axios';export const api=axios.create({baseURL:'/api',withCredentials:true});api.interceptors.response.use(r=>r.data,e=>Promise.reject(new Error(e.response?.data?.error?.message||'Không thể kết nối hệ thống.')));export const money=n=>new Intl.NumberFormat('vi-VN').format(n||0)+' ₫';

@@ -1,0 +1,31 @@
+﻿const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (character) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}[character]));
+
+const money = (amount) => new Intl.NumberFormat('vi-VN').format(amount) + ' VND';
+const shell = (title, content) => `<!doctype html><html lang="vi"><head><meta charset="utf-8"></head><body style="margin:0;background:#f2f5fa;font-family:Arial,Helvetica,sans-serif;color:#20314d"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f2f5fa;padding:32px 12px"><tr><td align="center"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#fff;border:1px solid #e6ebf2;border-radius:14px;overflow:hidden"><tr><td style="background:#123e78;padding:24px 30px;color:#fff"><div style="font-size:12px;letter-spacing:2px;color:#bdd3f0">NT iBANKING</div><div style="font-size:22px;font-weight:bold;margin-top:7px">NT <span style="font-weight:400;color:#c9dcf5">iBANKING</span></div><div style="font-size:11px;color:#c9dcf5;margin-top:5px">NT iBanking – Internet Banking System</div></td></tr><tr><td style="padding:30px">${content}</td></tr><tr><td style="padding:18px 30px;background:#f8fafd;border-top:1px solid #edf1f6;color:#8290a4;font-size:12px;line-height:1.6">Email tự động từ hệ thống NT iBANKING. Vui lòng không trả lời email này.</td></tr></table><div style="font-size:11px;color:#9aa6b6;margin-top:16px">${escapeHtml(title)}</div></td></tr></table></body></html>`;
+
+export function otpEmail({ fullName, otp, transactionCode, studentCode, studentName, amount }) {
+  const safeName = escapeHtml(fullName || 'Quý khách');
+  const safeTransaction = escapeHtml(transactionCode);
+  const safeStudentCode = escapeHtml(studentCode);
+  const safeStudentName = escapeHtml(studentName);
+  const amountText = money(amount);
+  const subject = '[NT iBANKING] Mã OTP xác thực thanh toán học phí';
+  const text = `Xin chào ${fullName || 'Quý khách'},\n\nMã xác thực giao dịch của bạn: ${otp}\nMã giao dịch: ${transactionCode}\nMSSV: ${studentCode}\nSinh viên: ${studentName}\nSố tiền: ${amountText}\nOTP có hiệu lực trong 5 phút và chỉ sử dụng một lần. Không chia sẻ mã này với bất kỳ ai.`;
+  const html = shell('Xác thực giao dịch học phí', `<h1 style="font-size:22px;margin:0 0 12px;color:#18365f">Xác thực giao dịch</h1><p style="font-size:15px;line-height:1.7;margin:0 0 18px">Xin chào <b>${safeName}</b>,</p><p style="font-size:14px;line-height:1.7;color:#53647c;margin:0 0 20px">Dùng mã dưới đây để xác nhận thanh toán học phí. Mã chỉ có hiệu lực trong <b>5 phút</b>.</p><div style="text-align:center;background:#f1f6ff;border:1px solid #dbe8fb;border-radius:12px;padding:20px;margin:0 0 22px"><div style="font-size:11px;letter-spacing:2px;color:#6d7f99">MÃ OTP</div><div style="font-size:34px;letter-spacing:9px;font-weight:bold;color:#174c91;padding:10px 0 4px">${otp}</div></div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:13px;line-height:1.8;color:#53647c"><tr><td style="padding:5px 0">Mã giao dịch</td><td align="right" style="font-weight:bold;color:#263a57">${safeTransaction}</td></tr><tr><td style="padding:5px 0">Mã số sinh viên</td><td align="right" style="font-weight:bold;color:#263a57">${safeStudentCode}</td></tr><tr><td style="padding:5px 0">Sinh viên</td><td align="right" style="font-weight:bold;color:#263a57">${safeStudentName}</td></tr><tr><td style="padding:5px 0">Số tiền</td><td align="right" style="font-weight:bold;color:#174c91">${amountText}</td></tr></table><div style="margin-top:22px;padding:13px 15px;border-radius:9px;background:#fff8e8;color:#805b12;font-size:12px;line-height:1.6"><b>Lưu ý bảo mật:</b> Không chia sẻ mã OTP với bất kỳ ai, kể cả người tự xưng là nhân viên ngân hàng hoặc nhà trường.</div>`);
+  return { subject, text, html };
+}
+
+export function receiptEmail({ payerName, transactionCode, studentCode, studentName, amount, balanceRemaining, completedAt }) {
+  const subject = '[NT iBANKING] Xác nhận thanh toán học phí thành công';
+  const time = new Date(completedAt || Date.now()).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const balanceText = Number.isInteger(balanceRemaining) ? money(balanceRemaining) : 'Không khả dụng';
+  const text = `Thanh toán học phí thành công.\nNgười thanh toán: ${payerName}\nMSSV: ${studentCode}\nSinh viên: ${studentName}\nSố tiền: ${money(amount)}\nSố dư còn lại: ${balanceText}\nMã giao dịch: ${transactionCode}\nThời gian: ${time}\nTrạng thái: THÀNH CÔNG.`;
+  const html = shell('Biên nhận thanh toán học phí', `<div style="text-align:center;padding:4px 0 20px"><div style="display:inline-block;border-radius:50%;background:#e8f7ef;color:#218451;padding:13px;font-size:24px">✓</div><h1 style="font-size:22px;color:#18365f;margin:14px 0 5px">Thanh toán thành công</h1><p style="font-size:13px;color:#78879b;margin:0">Học phí đã được ghi nhận trên hệ thống.</p></div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:13px;line-height:1.8;color:#53647c;border-top:1px solid #edf1f6"><tr><td style="padding:9px 0">Người thanh toán</td><td align="right" style="font-weight:bold;color:#263a57">${escapeHtml(payerName)}</td></tr><tr><td style="padding:9px 0">Mã số sinh viên</td><td align="right" style="font-weight:bold;color:#263a57">${escapeHtml(studentCode)}</td></tr><tr><td style="padding:9px 0">Sinh viên</td><td align="right" style="font-weight:bold;color:#263a57">${escapeHtml(studentName)}</td></tr><tr><td style="padding:9px 0">Số tiền đã thanh toán</td><td align="right" style="font-weight:bold;color:#174c91">${money(amount)}</td></tr><tr><td style="padding:9px 0">Số dư còn lại</td><td align="right" style="font-weight:bold;color:#263a57">${escapeHtml(balanceText)}</td></tr><tr><td style="padding:9px 0">Mã giao dịch</td><td align="right" style="font-weight:bold;color:#263a57">${escapeHtml(transactionCode)}</td></tr><tr><td style="padding:9px 0">Thời gian</td><td align="right" style="color:#263a57">${escapeHtml(time)}</td></tr><tr><td style="padding:9px 0">Trạng thái</td><td align="right" style="font-weight:bold;color:#218451">THÀNH CÔNG</td></tr></table>`);
+  return { subject, text, html };
+}
+
+export { escapeHtml };
+
+

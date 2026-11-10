@@ -1,0 +1,1 @@
+{"name":"api-gateway","type":"module","scripts":{"dev":"node src/server.js"},"dependencies":{"@ibanking/shared":"*"}}

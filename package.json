@@ -1,0 +1,32 @@
+﻿{
+    "name":  "ibanking-tuition",
+    "private":  true,
+    "type":  "module",
+    "workspaces":  [
+                       "frontend",
+                       "backend/shared",
+                       "backend/api-gateway",
+                       "backend/auth-service",
+                       "backend/tuition-service",
+                       "backend/payment-service",
+                       "backend/notification-service"
+                   ],
+    "scripts":  {
+                    "dev:frontend":  "npm --workspace frontend run dev",
+                    "dev:gateway":  "npm --workspace api-gateway run dev",
+                    "dev:auth":  "npm --workspace auth-service run dev",
+                    "dev:tuition":  "npm --workspace tuition-service run dev",
+                    "dev:payment":  "npm --workspace payment-service run dev",
+                    "dev:notification":  "npm --workspace notification-service run dev",
+                    "dev":  "node scripts/dev.mjs",
+                    "build":  "npm --workspace frontend run build",
+                    "seed":  "npm --workspace auth-service run seed \u0026\u0026 npm --workspace tuition-service run seed \u0026\u0026 npm --workspace payment-service run seed \u0026\u0026 npm --workspace notification-service run seed",
+                    "smoke":  "node scripts/smoke.mjs",
+                    "demo:payment":  "node scripts/demo-payment.mjs",
+                    "demo:concurrency":  "node scripts/concurrency-demo.mjs",
+                    "demo:otp":  "node scripts/otp-demo.mjs",
+                    "demo:compensation":  "node scripts/compensation-demo.mjs",
+                    "test:notification":  "npm --workspace notification-service run test",
+                    "test":  "npm run test:notification \u0026\u0026 node --test --test-isolation=none scripts/integration.test.js"
+                }
+}
